@@ -40,19 +40,21 @@ export default function Home() {
               title="Tersedia"
               value={3}
               color="bg-green-500"
-              icon={<FaCheckCircle />}
+              icon={FaCheckCircle}
             />
+
             <SummaryCard
               title="Hampir Habis"
               value={3}
               color="bg-yellow-500"
-              icon={<FaExclamationTriangle />}
+              icon={FaExclamationTriangle}
             />
+
             <SummaryCard
               title="Total"
               value={6}
               color="bg-[#1447E6]"
-              icon={<FaListUl />}
+              icon={FaListUl}
             />
           </div>
 
