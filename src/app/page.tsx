@@ -1,25 +1,52 @@
 import SummaryCard from "@/components/summaryCard";
 import DispenserCard from "@/components/dispenserCard";
+import { FaCheckCircle, FaExclamationTriangle, FaListUl } from "react-icons/fa";
 
 export default function Home() {
   return (
-    <div className="flex justify-center bg-gray-100 min-h-screen">
-      <div className="w-full max-w-sm p-4 space-y-4 bg-white">
+    <div className="flex justify-center bg-[#EFF6FF] min-h-screen">
+      <div className="w-full max-w-sm p-4 space-y-4 bg-white py-10 rounded-4xl outline-1 outline-gray-300">
         {/* Banner */}
-        <div className="bg-blue-600 text-white p-4 rounded-xl">
-          <h1 className="text-lg font-bold">Selamat Datang!</h1>
-          <p className="text-sm">Temukan dispenser terdekat</p>
+        <div
+          className="text-white p-8 rounded-xl flex items-center justify-between relative overflow-hidden"
+          style={{ minHeight: '80px', backgroundColor: '#1447E6' }}
+        >
+          <div>
+            <h1 className="text-xl font-bold">Selamat Datang!</h1>
+            <p className="text-sm">Temukan dispenser terdekat</p>
+          </div>
+          <img
+            src="/Roga.png"
+            alt="Logo"
+            className="object-contain absolute right-4 bottom-0"
+            style={{ width: '100px', height: '70px' }}
+          />
         </div>
 
         {/* Summary */}
         <div className="flex gap-2">
-          <SummaryCard title="Tersedia" value={3} color="bg-green-500" />
-          <SummaryCard title="Hampir Habis" value={3} color="bg-yellow-500" />
-          <SummaryCard title="Total" value={6} color="bg-blue-500" />
+          <SummaryCard
+            title="Tersedia"
+            value={3}
+            color="bg-green-500"
+            icon={<FaCheckCircle />}
+          />
+          <SummaryCard
+            title="Hampir Habis"
+            value={3}
+            color="bg-yellow-500"
+            icon={<FaExclamationTriangle />}
+          />
+          <SummaryCard
+            title="Total"
+            value={6}
+            color="bg-[#1447E6]"
+            icon={<FaListUl />}
+          />
         </div>
 
         {/* Dispenser */}
-        <h2 className="font-semibold">Dispenser Terdekat</h2>
+        <h2 className="font-regular mt-6 text-black">Dispenser Terdekat</h2>
 
         <DispenserCard
         name="Dispenser Al Wasath"
