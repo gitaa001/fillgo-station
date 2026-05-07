@@ -12,10 +12,10 @@ import {
 } from "react-icons/fi";
 
 const navItems = [
-  { label: "Dashboard", icon: FiGrid, path: "/pengelola" },
-  { label: "Dispensers", icon: FiDatabase, path: "/pengelola/dispenser" },
-  { label: "History", icon: FiClock, path: "/pengelola/historis" },
-  { label: "Reports", icon: FiFileText, path: "/pengelola/laporan" },
+  { label: "Dashboard", icon: FiGrid,     path: "/pengelola/dashboard" },
+  { label: "Dispensers", icon: FiDatabase, path: "/pengelola/dashboard/dispenser" },
+  { label: "History",    icon: FiClock,    path: "/pengelola/dashboard/historis" },
+  { label: "Reports",    icon: FiFileText, path: "/pengelola/dashboard/laporan" },
 ];
 
 const NOTIF_COUNT = 3;

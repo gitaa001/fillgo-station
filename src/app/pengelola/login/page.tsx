@@ -22,7 +22,6 @@ export default function LoginPage() {
 
     if (email === "admin@fillgo.id" && password === "admin123") {
       localStorage.setItem("pengelola_auth", "true");
-      router.push("/pengelola");
       router.push("/pengelola/dashboard")
     } else {
       setError("Email atau password salah.");
