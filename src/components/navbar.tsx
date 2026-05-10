@@ -10,7 +10,7 @@ export default function Navbar() {
   const navItems = [
     { label: "Beranda", icon: FaHome, path: "/" },
     { label:    "Peta", icon: FaMap, path: "/map" },
-    { label: "Notif", icon: FaBell, path: "/notifications" },
+    { label: "Notifikasi", icon: FaBell, path: "/notifications" },
   ];
 
   return (
