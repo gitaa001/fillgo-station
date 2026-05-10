@@ -93,8 +93,8 @@ export default function Home() {
         {/* SCROLLABLE CONTENT */}
         <div className="h-screen overflow-y-auto pb-24">
 
-          {/* STICKY HEADER */}
-          <div className="sticky top-0 z-20 bg-white px-4 pt-10 pb-4 space-y-4 border-b border-gray-100">
+          {/* HEADER */}
+          <div className="top-0 z-20 bg-white px-4 pt-10 pb-4 space-y-4 border-b border-gray-100">
 
             {/* BANNER */}
             <div
