@@ -10,7 +10,7 @@ export type Dispenser = {
 
 export const dispensers: Dispenser[] = [
   {
-    id: "al-wasath",
+    id: "DS001",
 
     name: "Dispenser Al Wasath",
 
@@ -26,7 +26,7 @@ export const dispensers: Dispenser[] = [
   },
 
   {
-    id: "gku-3",
+    id: "DS002",
 
     name: "Dispenser GKU 3",
 
@@ -42,7 +42,7 @@ export const dispensers: Dispenser[] = [
   },
 
   {
-    id: "plaza-utama",
+    id: "DS003",
 
     name: "Dispenser Plaza Utama",
 
@@ -57,7 +57,7 @@ export const dispensers: Dispenser[] = [
   },
 
   {
-    id: "koica",
+    id: "DS004",
 
     name: "Dispenser Koica",
 
