@@ -142,10 +142,14 @@ export default function DispenserPage() {
 
   // ENRICH DISPENSERS
   const enrichedDispensers =
-    useMemo(() => {
+    useMemo<
+      EnrichedDispenser[]
+    >(() => {
 
       return baseDispensers.map(
-        (disp) => {
+        (
+          disp
+        ): EnrichedDispenser => {
 
           // LIVE SENSOR
           if (
@@ -168,7 +172,7 @@ export default function DispenserPage() {
                 )
               );
 
-            const status =
+            const status: EnrichedDispenser["status"] =
               waterLevel <= 20
                 ? "Empty"
                 : waterLevel <= 60
@@ -203,7 +207,7 @@ export default function DispenserPage() {
               ? 42
               : 15;
 
-          const status =
+          const status: EnrichedDispenser["status"] =
             waterLevel <= 20
               ? "Empty"
               : waterLevel <= 60
@@ -225,17 +229,21 @@ export default function DispenserPage() {
           };
         }
       );
+
     }, [sensorData]);
 
   // MERGED DISPENSERS
-  const allDispensers = [
-    ...enrichedDispensers,
-    ...customDispensers,
-  ];
+  const allDispensers: EnrichedDispenser[] =
+    [
+      ...enrichedDispensers,
+      ...customDispensers,
+    ];
 
   // FILTERED DISPENSERS
   const filtered =
-    useMemo(() => {
+    useMemo<
+      EnrichedDispenser[]
+    >(() => {
 
       return allDispensers.filter(
         (d) => {
@@ -383,9 +391,11 @@ export default function DispenserPage() {
           onClick={handleAdd}
           className="flex items-center gap-2 bg-[#1447E6] hover:bg-[#1040d0] transition-colors text-white text-sm font-semibold px-5 py-2.5 rounded-xl shrink-0"
         >
+
           <FiPlus size={16} />
 
           Add Dispenser
+
         </button>
 
       </div>
@@ -465,6 +475,7 @@ export default function DispenserPage() {
         onSave={handleSave}
         initial={editTarget}
       />
+
     </div>
   );
 }
