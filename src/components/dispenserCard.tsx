@@ -13,12 +13,8 @@ import WaterQuality from "./waterQuality";
 type Props = {
   name: string;
   location: string;
-  distance: string;
-
   waterLevel: number;
-
   status: string;
-
   ph: number;
   turbidity: number;
   temperature: number;
@@ -29,12 +25,8 @@ type Props = {
 export default function DispenserCard({
   name,
   location,
-  distance,
-
   waterLevel,
-
   status,
-
   ph,
   turbidity,
   temperature,
@@ -45,25 +37,46 @@ export default function DispenserCard({
     useState(false);
 
   // WATER QUALITY
-  let quality = "Baik";
+  const normalizedCondition =
+    waterCondition?.toUpperCase();
 
-  if (
-    ph < 6.5 ||
-    ph > 8.5 ||
-    turbidity > 5 ||
-    temperature < 10 ||
-    temperature > 35
-  ) {
-    quality = "Buruk";
-  } else if (
+  const phBad =
+    ph < 6.5 || ph > 8.5;
+  const phMedium =
     (ph >= 6.5 && ph < 7) ||
-    (ph > 8 && ph <= 8.5) ||
-    (turbidity > 1 &&
-      turbidity <= 5) ||
+    (ph > 8 && ph <= 8.5);
+
+  const turbidityBad =
+    normalizedCondition
+      ? normalizedCondition.includes("KERUH")
+      : turbidity <= 1400;
+  const turbidityMedium =
+    normalizedCondition
+      ? normalizedCondition.includes("SEDANG")
+      : turbidity > 1400 &&
+        turbidity <= 1800;
+
+  const temperatureBad =
+    temperature < 10 ||
+    temperature > 35;
+  const temperatureMedium =
     (temperature >= 10 &&
       temperature < 20) ||
     (temperature > 30 &&
-      temperature <= 35)
+      temperature <= 35);
+
+  let quality = "Baik";
+
+  if (
+    phBad ||
+    turbidityBad ||
+    temperatureBad
+  ) {
+    quality = "Buruk";
+  } else if (
+    phMedium ||
+    turbidityMedium ||
+    temperatureMedium
   ) {
     quality = "Sedang";
   }
@@ -106,10 +119,6 @@ export default function DispenserCard({
             />
 
             {location}
-          </p>
-
-          <p className="text-xs mt-1 text-gray-400">
-            {distance}
           </p>
         </div>
 

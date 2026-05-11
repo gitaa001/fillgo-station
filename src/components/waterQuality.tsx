@@ -10,9 +10,9 @@ export default function WaterQuality({ ph, turbidity, temperature }: Props) {
     ? { color: "text-green-600", icon: "✓", msg: "pH air normal dan aman untuk dikonsumsi" }
     : { color: "text-red-600", icon: "!", msg: "pH air di luar rentang ideal" };
 
-  const turbidityStatus = turbidity <= 1
+  const turbidityStatus = turbidity > 1800
     ? { color: "text-green-600", icon: "✓", msg: "Air jernih" }
-    : turbidity <= 5
+    : turbidity > 1400
     ? { color: "text-yellow-600", icon: "!", msg: "Air agak keruh" }
     : { color: "text-red-600", icon: "!", msg: "Air sangat keruh" };
 
@@ -39,7 +39,7 @@ export default function WaterQuality({ ph, turbidity, temperature }: Props) {
           <span className="font-semibold w-24">Turbidity</span>
           <span>{turbidity}</span>
         </div>
-        <div className="text-xs text-gray-500 ml-24">Ideal: ≤ 1 NTU</div>
+        <div className="text-xs text-gray-500 ml-24">Ideal: {'>'}1800 (Jernih)</div>
         <div className={`ml-24 text-xs flex items-center gap-1 ${turbidityStatus.color}`}>
           <span className="font-bold">{turbidityStatus.icon}</span> {turbidityStatus.msg}
         </div>

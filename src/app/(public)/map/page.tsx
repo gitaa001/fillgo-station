@@ -71,8 +71,15 @@ export default function MapPage() {
           Math.min(
             100,
             Math.round(
-              100 -
-                sensorData.turbidity / 30
+              sensorData.turbidity > 1800
+                ? 90
+                : sensorData.turbidity > 1400
+                ? 50 +
+                  ((sensorData.turbidity -
+                    1400) /
+                    400) *
+                    40
+                : 30
             )
           )
         )

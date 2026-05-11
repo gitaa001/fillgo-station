@@ -110,7 +110,7 @@ function getPeriodWindow(period: ReportPeriod) {
 
 function classifyIncident(log: FirebaseLog) {
   if (log.ph < 6.5 || log.ph > 8.5) return "pH Out of Range";
-  if (log.turbidity > 5) return "High Turbidity";
+  if (log.turbidity <= 1400) return "High Turbidity";
   if (log.temperature < 10 || log.temperature > 35) return "Temperature Spike";
   return null;
 }
