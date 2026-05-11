@@ -1,4 +1,7 @@
-import { initializeApp } from "firebase/app";
+import {
+  getApps,
+  initializeApp,
+} from "firebase/app";
 
 import {
   getDatabase,
@@ -28,14 +31,16 @@ const firebaseConfig = {
   appId:
     process.env
       .NEXT_PUBLIC_FIREBASE_APP_ID,
+
+  databaseURL:
+    process.env
+      .NEXT_PUBLIC_FIREBASE_DATABASE_URL,
 };
 
 const app =
-  initializeApp(firebaseConfig);
+  getApps().length
+    ? getApps()[0]
+    : initializeApp(firebaseConfig);
 
 export const db =
-  getDatabase(
-    app,
-    process.env
-      .NEXT_PUBLIC_FIREBASE_DATABASE_URL
-  );
+  getDatabase(app);
