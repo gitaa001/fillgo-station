@@ -194,10 +194,10 @@ export default function Home() {
             {filteredDispensers.map((disp) => {
               // KOICA LIVE SENSOR
               const isKoica =
-                disp.id === "koica";
+                disp.isLive;
 
               const liveWaterLevel =
-                sensorData?.turbidity
+                sensorData?.turbidity !== undefined
                   ? Math.max(
                       15,
                       Math.min(

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import LaporanExport from "@/components/pengelola/LaporanExport";
 import {
   BarChart,
@@ -14,7 +14,6 @@ import {
 } from "recharts";
 import {
   ChevronDown,
-  FileText,
   TrendingUp,
   TrendingDown,
   Minus,
@@ -23,14 +22,53 @@ import {
   Clock,
 } from "lucide-react";
 
+import { dispensers } from "@/lib/dispenser";
+
 type ReportPeriod = "weekly" | "monthly" | "quarterly";
+
+type FirebaseLog = {
+  distance: number;
+  ph: number;
+  ph_status: string;
+  temperature: number;
+  timestamp: number;
+  turbidity: number;
+  water_condition: string;
+};
+
+interface BarRow {
+  label: string;
+  waterLevel: number;
+  ph: number;
+  turbidity: number;
+  incidents: number;
+}
+
+interface Summary {
+  totalDispenser: number;
+  activeDispenser: number;
+  avgWaterLevel: number;
+  avgPh: number;
+  avgTurbidity: number;
+  avgTemp: number;
+  totalIncidents: number;
+  resolvedIncidents: number;
+  uptimePct: number;
+}
+
+type IncidentRow = {
+  id: string;
+  dispenser: string;
+  type: string;
+  date: string;
+  status: "resolved" | "open";
+};
+
+const LIVE_DISPENSERS = dispensers.filter((d) => d.isLive).map((d) => d.name);
 
 const DISPENSERS = [
   "Semua Dispenser",
-  "Dispenser Gedung A - Lt. 1",
-  "Dispenser Gedung A - Lt. 2",
-  "Dispenser Gedung B - Lt. 1",
-  "Dispenser Gedung C - Lobby",
+  ...LIVE_DISPENSERS,
 ];
 
 const PERIOD_LABELS: Record<ReportPeriod, string> = {
@@ -39,44 +77,170 @@ const PERIOD_LABELS: Record<ReportPeriod, string> = {
   quarterly: "Quarterly",
 };
 
-function mockBarData(period: ReportPeriod) {
-  const labels =
-    period === "weekly"
-      ? ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"]
-      : period === "monthly"
-      ? ["Mg 1", "Mg 2", "Mg 3", "Mg 4"]
-      : ["Jan-Mar", "Apr-Jun", "Jul-Sep", "Okt-Des"];
+function formatTimestamp(timestamp: number) {
+  if (timestamp > 1000000000000) {
+    return new Date(timestamp).toLocaleString("id-ID");
+  }
 
-  return labels.map((label) => ({
-    label,
-    waterLevel: Math.round(50 + Math.random() * 40),
-    ph: parseFloat((6.8 + Math.random() * 0.6).toFixed(2)),
-    turbidity: parseFloat((0.3 + Math.random() * 0.6).toFixed(2)),
-    incidents: Math.floor(Math.random() * 4),
-  }));
+  const totalSeconds = Math.max(0, Math.floor(timestamp));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours}j ${minutes}m ${seconds}d`;
+  }
+
+  if (minutes > 0) {
+    return `${minutes}m ${seconds}d`;
+  }
+
+  return `${seconds}d`;
 }
 
-function mockSummary() {
+function getWaterLevel(turbidity: number) {
+  return Math.max(15, Math.min(100, Math.round(100 - turbidity / 30)));
+}
+
+function getPeriodWindow(period: ReportPeriod) {
+  if (period === "weekly") return 7;
+  if (period === "monthly") return 30;
+  return 90;
+}
+
+function classifyIncident(log: FirebaseLog) {
+  if (log.ph < 6.5 || log.ph > 8.5) return "pH Out of Range";
+  if (log.turbidity > 5) return "High Turbidity";
+  if (log.temperature < 10 || log.temperature > 35) return "Temperature Spike";
+  return null;
+}
+
+function aggregateLogSet(logSet: FirebaseLog[], labels: string[]): BarRow[] {
+  if (!logSet.length) {
+    return labels.map((label) => ({
+      label,
+      waterLevel: 0,
+      ph: 0,
+      turbidity: 0,
+      incidents: 0,
+    }));
+  }
+
+  const buckets = labels.map(() => [] as FirebaseLog[]);
+
+  logSet.forEach((log, index) => {
+    const bucketIndex = Math.min(
+      labels.length - 1,
+      Math.floor((index * labels.length) / logSet.length)
+    );
+
+    buckets[bucketIndex].push(log);
+  });
+
+  return buckets.map((bucket, index) => {
+    if (!bucket.length) {
+      return {
+        label: labels[index],
+        waterLevel: 0,
+        ph: 0,
+        turbidity: 0,
+        incidents: 0,
+      };
+    }
+
+    const waterLevels = bucket.map((log) => getWaterLevel(log.turbidity));
+    const incidentCount = bucket.filter((log) => classifyIncident(log)).length;
+
+    return {
+      label: labels[index],
+      waterLevel: Math.round(waterLevels.reduce((sum, value) => sum + value, 0) / bucket.length),
+      ph: parseFloat(
+        (bucket.reduce((sum, log) => sum + log.ph, 0) / bucket.length).toFixed(2)
+      ),
+      turbidity: parseFloat(
+        (bucket.reduce((sum, log) => sum + log.turbidity, 0) / bucket.length).toFixed(2)
+      ),
+      incidents: incidentCount,
+    };
+  });
+}
+
+function buildIncidentLog(logSet: FirebaseLog[]): IncidentRow[] {
+  const incidents = logSet
+    .filter((log) => classifyIncident(log))
+    .map((log) => ({
+      log,
+      type: classifyIncident(log) as string,
+    }));
+
+  const latestIncidentTimestamp =
+    incidents.length > 0
+      ? Math.max(...incidents.map((item) => item.log.timestamp))
+      : null;
+
+  return incidents
+    .slice()
+    .reverse()
+    .map((item, index) => ({
+      id: `INC-${String(index + 1).padStart(3, "0")}`,
+      dispenser: DISPENSERS[1] ?? "Dispenser Live",
+      type: item.type,
+      date: formatTimestamp(item.log.timestamp),
+      status:
+        latestIncidentTimestamp !== null &&
+        item.log.timestamp === latestIncidentTimestamp
+          ? "open"
+          : "resolved",
+    }));
+}
+
+function buildSummary(logSet: FirebaseLog[]): Summary {
+  const total = logSet.length;
+  const totalIncidents = logSet.filter((log) => classifyIncident(log)).length;
+  const openIncident = totalIncidents > 0 ? 1 : 0;
+
+  if (!total) {
+    return {
+      totalDispenser: dispensers.length,
+      activeDispenser: LIVE_DISPENSERS.length,
+      avgWaterLevel: 0,
+      avgPh: 0,
+      avgTurbidity: 0,
+      avgTemp: 0,
+      totalIncidents: 0,
+      resolvedIncidents: 0,
+      uptimePct: 0,
+    };
+  }
+
+  const avgWaterLevel = Math.round(
+    logSet.reduce((sum, log) => sum + getWaterLevel(log.turbidity), 0) / total
+  );
+  const avgPh = parseFloat(
+    (logSet.reduce((sum, log) => sum + log.ph, 0) / total).toFixed(2)
+  );
+  const avgTurbidity = parseFloat(
+    (logSet.reduce((sum, log) => sum + log.turbidity, 0) / total).toFixed(2)
+  );
+  const avgTemp = parseFloat(
+    (logSet.reduce((sum, log) => sum + log.temperature, 0) / total).toFixed(1)
+  );
+  const uptimePct = parseFloat(
+    (((total - totalIncidents) / total) * 100).toFixed(1)
+  );
+
   return {
-    totalDispenser: 4,
-    activeDispenser: 3,
-    avgWaterLevel: 74,
-    avgPh: 7.1,
-    avgTurbidity: 0.62,
-    avgTemp: 24.3,
-    totalIncidents: 5,
-    resolvedIncidents: 4,
-    uptimePct: 97.4,
+    totalDispenser: dispensers.length,
+    activeDispenser: LIVE_DISPENSERS.length,
+    avgWaterLevel,
+    avgPh,
+    avgTurbidity,
+    avgTemp,
+    totalIncidents,
+    resolvedIncidents: Math.max(totalIncidents - openIncident, 0),
+    uptimePct,
   };
 }
-
-const INCIDENT_LOG = [
-  { id: "INC-001", dispenser: "Gedung A - Lt. 1", type: "Low Water Level", date: "Apr 20, 2026", status: "resolved" },
-  { id: "INC-002", dispenser: "Gedung B - Lt. 1", type: "pH Out of Range", date: "Apr 18, 2026", status: "resolved" },
-  { id: "INC-003", dispenser: "Gedung C - Lobby", type: "High Turbidity", date: "Apr 15, 2026", status: "resolved" },
-  { id: "INC-004", dispenser: "Gedung A - Lt. 2", type: "Temperature Spike", date: "Apr 12, 2026", status: "resolved" },
-  { id: "INC-005", dispenser: "Gedung B - Lt. 1", type: "Low Water Level", date: "Apr 8, 2026", status: "open" },
-];
 
 function Dropdown<T extends string>({
   label,
@@ -96,7 +260,7 @@ function Dropdown<T extends string>({
     Array.isArray(labelMap) ? (v as string) : (labelMap as Record<T, string>)[v];
 
   return (
-    <div className="min-w-[160px]">
+    <div className="min-w-40">
       <label className="block text-xs font-medium text-gray-500 mb-1.5">{label}</label>
       <div className="relative">
         <button
@@ -168,9 +332,73 @@ function KpiCard({
 export default function LaporanPage() {
   const [period, setPeriod] = useState<ReportPeriod>("monthly");
   const [dispenser, setDispenser] = useState(DISPENSERS[0]);
+  const [logs, setLogs] = useState<FirebaseLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const barData = useMemo(() => mockBarData(period), [period, dispenser]);
-  const summary = useMemo(() => mockSummary(), [dispenser]);
+  useEffect(() => {
+    let mounted = true;
+
+    async function fetchLogs() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await fetch("/api/dispenser/logs");
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data?.error ?? "Failed to fetch report logs");
+        }
+
+        if (mounted) {
+          setLogs(Array.isArray(data) ? data : []);
+        }
+      } catch (fetchError) {
+        if (mounted) {
+          setError(
+            fetchError instanceof Error
+              ? fetchError.message
+              : "Failed to fetch report logs"
+          );
+          setLogs([]);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchLogs();
+
+    const interval = setInterval(fetchLogs, 30000);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  const periodLogs = useMemo(() => {
+    const windowSize = getPeriodWindow(period);
+    return logs.slice(-windowSize);
+  }, [logs, period]);
+
+  const barData = useMemo(() => {
+    const labels =
+      period === "weekly"
+        ? ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"]
+        : period === "monthly"
+        ? ["Mg 1", "Mg 2", "Mg 3", "Mg 4"]
+        : ["Tri 1", "Tri 2", "Tri 3", "Tri 4"];
+
+    return aggregateLogSet(periodLogs, labels);
+  }, [periodLogs, period]);
+
+  const summary = useMemo(() => buildSummary(periodLogs), [periodLogs]);
+
+  const incidentLog = useMemo(() => buildIncidentLog(periodLogs), [periodLogs]);
 
   return (
     <div className="min-h-screen bg-[#EFF6FF] p-6 font-sans">
@@ -187,8 +415,8 @@ export default function LaporanPage() {
         <Dropdown
           label="Select Dispenser"
           value={dispenser}
-          options={DISPENSERS as unknown as string[] & typeof DISPENSERS}
-          labelMap={DISPENSERS as unknown as Record<string, string>}
+          options={DISPENSERS}
+          labelMap={DISPENSERS}
           onChange={(v) => setDispenser(v)}
         />
         <Dropdown
@@ -202,6 +430,12 @@ export default function LaporanPage() {
           <LaporanExport period={period} dispenser={dispenser} barData={barData} summary={summary} />
         </div>
       </div>
+
+      {error && (
+        <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
 
       {/* ── KPI grid ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
@@ -270,6 +504,9 @@ export default function LaporanPage() {
       {/* ── Parameter summary table ── */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5">
         <h2 className="text-sm font-semibold text-gray-700 mb-4">Parameter Summary</h2>
+        {loading && (
+          <p className="mb-3 text-sm text-gray-400">Memuat data laporan...</p>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -330,10 +567,10 @@ export default function LaporanPage() {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-gray-700">Incident Log</h2>
-          <span className="text-xs text-gray-400">{INCIDENT_LOG.length} total</span>
+          <span className="text-xs text-gray-400">{incidentLog.length} total</span>
         </div>
         <div className="flex flex-col gap-2">
-          {INCIDENT_LOG.map((inc) => (
+          {incidentLog.map((inc) => (
             <div
               key={inc.id}
               className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"

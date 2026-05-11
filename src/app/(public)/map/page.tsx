@@ -15,6 +15,7 @@ import {
 } from "@/lib/dispenser";
 
 import BottomNavbar from "@/components/navbar";
+import WaterQuality from "@/components/waterQuality";
 
 mapboxgl.accessToken =
   process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
@@ -58,6 +59,31 @@ export default function MapPage() {
 
   const [sensorData, setSensorData] =
     useState<SensorData | null>(null);
+
+  const selectedIsLive =
+    selectedDispenser?.isLive &&
+    sensorData !== null;
+
+  const liveWaterLevel =
+    sensorData?.turbidity !== undefined
+      ? Math.max(
+          15,
+          Math.min(
+            100,
+            Math.round(
+              100 -
+                sensorData.turbidity / 30
+            )
+          )
+        )
+      : 92;
+
+  const liveStatus =
+    liveWaterLevel <= 30
+      ? "Kosong"
+      : liveWaterLevel <= 60
+      ? "Hampir Habis"
+      : "Tersedia";
 
   // CALCULATE DISTANCE
   function calculateDistance(
@@ -448,10 +474,15 @@ export default function MapPage() {
 
         {/* SELECTED DISPENSER DETAIL */}
         {selectedDispenser && (
-          <div className="absolute left-4 right-4 bottom-[360px] z-40">
-            <div className="bg-white rounded-2xl p-4 shadow-xl border border-gray-200">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <button
+              aria-label="Tutup detail dispenser"
+              onClick={() => setSelectedDispenser(null)}
+              className="absolute inset-0 bg-black/40"
+            />
 
-              <div className="flex justify-between items-start">
+            <div className="relative w-full max-w-sm max-h-[85vh] overflow-y-auto rounded-3xl bg-white shadow-2xl border border-gray-200 p-4">
+              <div className="flex justify-between items-start gap-4">
                 <div>
                   <h2 className="font-bold text-black text-lg">
                     {selectedDispenser.name}
@@ -463,69 +494,95 @@ export default function MapPage() {
                 </div>
 
                 <button
-                  onClick={() =>
-                    setSelectedDispenser(null)
-                  }
-                  className="text-gray-400 text-lg"
+                  onClick={() => setSelectedDispenser(null)}
+                  className="shrink-0 w-9 h-9 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center"
+                  aria-label="Tutup modal"
                 >
                   ✕
                 </button>
               </div>
 
-              {/* LIVE SENSOR DATA */}
-              {selectedDispenser.id === "koica" &&
-                sensorData && (
-                  <div className="mt-4 space-y-2">
+              <div className="mt-4 space-y-4">
+                {selectedIsLive && sensorData ? (
+                  <>
+                    <div className="rounded-2xl bg-blue-50 border border-blue-100 p-4">
+                      <div className="flex justify-between items-center gap-3">
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-blue-500 font-semibold">
+                            Detail Kualitas Air
+                          </p>
 
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">
-                        pH Air
-                      </span>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Pembacaan sensor terbaru dari dispenser ini.
+                          </p>
+                        </div>
 
-                      <span className="font-medium text-black">
-                        {sensorData.ph}
-                      </span>
+                        <span className="text-xs font-semibold px-3 py-1 rounded-full bg-blue-600 text-white whitespace-nowrap">
+                          {liveStatus}
+                        </span>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                        <div className="rounded-xl bg-white p-3 border border-blue-100">
+                          <p className="text-gray-500 text-xs">pH Air</p>
+                          <p className="font-semibold text-black mt-1">
+                            {sensorData.ph}
+                          </p>
+                        </div>
+
+                        <div className="rounded-xl bg-white p-3 border border-blue-100">
+                          <p className="text-gray-500 text-xs">Temperatur</p>
+                          <p className="font-semibold text-black mt-1">
+                            {sensorData.temperature}°C
+                          </p>
+                        </div>
+
+                        <div className="rounded-xl bg-white p-3 border border-blue-100">
+                          <p className="text-gray-500 text-xs">Turbidity</p>
+                          <p className="font-semibold text-black mt-1">
+                            {sensorData.turbidity}
+                          </p>
+                        </div>
+
+                        <div className="rounded-xl bg-white p-3 border border-blue-100">
+                          <p className="text-gray-500 text-xs">Kondisi Air</p>
+                          <p className="font-semibold text-black mt-1">
+                            {sensorData.water_condition}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4">
+                        <div className="flex justify-between items-center mb-1 text-sm">
+                          <span className="text-gray-500">Ketersediaan Air</span>
+                          <span className="font-semibold text-black">
+                            {liveWaterLevel}%
+                          </span>
+                        </div>
+
+                        <div className="w-full h-2 rounded-full bg-blue-100 overflow-hidden">
+                          <div
+                            className="h-2 rounded-full bg-blue-600"
+                            style={{ width: `${liveWaterLevel}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-4 rounded-xl bg-white p-3 border border-blue-100">
+                        <WaterQuality
+                          ph={sensorData.ph}
+                          turbidity={sensorData.turbidity}
+                          temperature={sensorData.temperature}
+                        />
+                      </div>
                     </div>
-
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">
-                        Status pH
-                      </span>
-
-                      <span
-                        className={`font-medium ${
-                          sensorData.ph_status ===
-                          "NORMAL"
-                            ? "text-green-600"
-                            : "text-red-500"
-                        }`}
-                      >
-                        {sensorData.ph_status}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">
-                        Temperatur
-                      </span>
-
-                      <span className="font-medium text-black">
-                        {sensorData.temperature}°C
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">
-                        Kondisi Air
-                      </span>
-
-                      <span className="font-medium text-black">
-                        {sensorData.water_condition}
-                      </span>
-                    </div>
-
+                  </>
+                ) : (
+                  <div className="rounded-2xl bg-gray-50 border border-gray-200 p-4 text-sm text-gray-600">
+                    Sensor live belum tersedia untuk dispenser ini.
                   </div>
-              )}
+                )}
+              </div>
 
               <div className="flex gap-2 mt-4">
                 <button
@@ -590,7 +647,7 @@ export default function MapPage() {
               shadow-2xl
               outline
               outline-gray-300
-              max-h-[320px]
+              max-h-80
               overflow-y-auto
             "
           >

@@ -29,8 +29,7 @@ function isValidLog(
   log: FirebaseLog
 ) {
   return (
-    log.timestamp >
-      1000000000 &&
+    log.timestamp > 0 &&
     log.temperature > -50 &&
     log.ph >= 0 &&
     log.ph <= 14

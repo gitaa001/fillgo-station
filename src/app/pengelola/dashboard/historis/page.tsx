@@ -50,6 +50,46 @@ interface StatSummary {
   iconBg: string;
 }
 
+function formatLogLabel(
+  timestamp: number
+) {
+  if (timestamp > 1000000000000) {
+    return new Date(
+      timestamp
+    ).toLocaleTimeString("id-ID", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  if (timestamp > 0) {
+    const totalSeconds =
+      Math.floor(timestamp);
+    const hours = Math.floor(
+      totalSeconds / 3600
+    );
+    const minutes = Math.floor(
+      (totalSeconds % 3600) / 60
+    );
+    const seconds =
+      totalSeconds % 60;
+
+    if (hours > 0) {
+      return `${hours}:${String(
+        minutes
+      ).padStart(2, "0")}:${String(
+        seconds
+      ).padStart(2, "0")}`;
+    }
+
+    return `${minutes}:${String(
+      seconds
+    ).padStart(2, "0")}`;
+  }
+
+  return "-";
+}
+
 export default function HistorisPage() {
 
   const [logs, setLogs] =
@@ -100,20 +140,8 @@ export default function HistorisPage() {
 
       return logs.map(
         (log) => {
-
-          const date =
-            new Date(
-              log.timestamp *
-                1000
-            );
-
-          return date.toLocaleTimeString(
-            "id-ID",
-            {
-              hour: "2-digit",
-              minute:
-                "2-digit",
-            }
+          return formatLogLabel(
+            log.timestamp
           );
         }
       );
