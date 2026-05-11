@@ -5,17 +5,36 @@ import {
   get,
 } from "firebase/database";
 
+type SensorLog = {
+  distance?: number;
+
+  ph: number;
+
+  ph_status: string;
+
+  temperature: number;
+
+  turbidity: number;
+
+  water_condition: string;
+
+  timestamp: number;
+};
+
 export async function GET() {
+
   try {
+
     const logsRef = ref(
-        db,
-        "devices/device_1/logs"
+      db,
+      "devices/device_1/logs"
     );
 
     const snapshot =
       await get(logsRef);
 
     if (!snapshot.exists()) {
+
       return Response.json(
         {
           error:
@@ -27,25 +46,57 @@ export async function GET() {
       );
     }
 
-    const logs = snapshot.val();
+    const logs =
+      snapshot.val();
 
-    // AMBIL LOG TERAKHIR
-    const latestKey =
-    Object.keys(logs).pop();
+    // OBJECT → ARRAY
+    const logsArray:
+      SensorLog[] =
+        Object.values(
+          logs
+        );
 
-    if (!latestKey) {
-    return Response.json(
+    // FILTER LOG VALID
+    const validLogs =
+      logsArray.filter(
+        (log) =>
+
+          typeof log.timestamp ===
+            "number" &&
+
+          log.temperature !==
+            -127 &&
+
+          typeof log.ph ===
+            "number" &&
+
+          typeof log.turbidity ===
+            "number"
+      );
+
+    if (
+      validLogs.length ===
+      0
+    ) {
+
+      return Response.json(
         {
-        error: "No latest log found",
+          error:
+            "No valid sensor logs found",
         },
         {
-        status: 404,
+          status: 404,
         }
-    );
+      );
     }
 
+    // SORT TERBARU
     const latestData =
-    logs[latestKey];
+      validLogs.sort(
+        (a, b) =>
+          b.timestamp -
+          a.timestamp
+      )[0];
 
     // RETURN CLEAN RESPONSE
     return Response.json({
@@ -66,7 +117,9 @@ export async function GET() {
       timestamp:
         latestData.timestamp,
     });
+
   } catch (error) {
+
     console.error(error);
 
     return Response.json(
