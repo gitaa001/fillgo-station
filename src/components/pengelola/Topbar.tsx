@@ -51,10 +51,7 @@ export default function Topbar() {
         {/* Nav */}
         <nav className="flex items-center gap-1 flex-1">
           {navItems.map(({ label, icon: Icon, path }) => {
-            const isActive =
-              path === "/pengelola"
-                ? pathname === "/pengelola"
-                : pathname.startsWith(path);
+            const isActive = pathname === path;
 
             return (
               <button
