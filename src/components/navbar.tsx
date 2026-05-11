@@ -2,15 +2,31 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { FaHome, FaMap, FaBell } from "react-icons/fa";
+import { hasNotifications } from "@/lib/notifications";
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
 
   const navItems = [
-    { label: "Beranda", icon: FaHome, path: "/" },
-    { label:    "Peta", icon: FaMap, path: "/map" },
-    { label: "Notifikasi", icon: FaBell, path: "/notifications" },
+    {
+      label: "Beranda",
+      icon: FaHome,
+      path: "/",
+      hasBadge: false,
+    },
+    {
+      label: "Peta",
+      icon: FaMap,
+      path: "/map",
+      hasBadge: false,
+    },
+    {
+      label: "Notifikasi",
+      icon: FaBell,
+      path: "/notifications",
+      hasBadge: hasNotifications,
+    },
   ];
 
   return (
@@ -27,7 +43,14 @@ export default function Navbar() {
               isActive ? "text-blue-600" : "text-gray-400"
             }`}
           >
-            <Icon size={22} />
+            <span className="relative">
+              <Icon size={22} />
+
+              {item.hasBadge && (
+                <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
+              )}
+            </span>
+
             <span>{item.label}</span>
           </button>
         );
